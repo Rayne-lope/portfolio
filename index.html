@@ -54,7 +54,10 @@
         .animate-marquee-reverse { animation: marquee-reverse 25s linear infinite; }
     </style>
 </head>
-<body class="pb-20 font-sans antialiased">
+<body class="pb-20 font-sans antialiased relative">
+
+    <!-- Particles Background Canvas -->
+    <canvas id="particles-bg" class="fixed inset-0 z-0 pointer-events-none"></canvas>
 
     <!-- Navbar -->
     <nav class="fixed top-0 w-full z-50 bg-[#0D0D0D]/90 backdrop-blur-xl border-b border-white/5">
@@ -79,8 +82,8 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="max-w-[1200px] mx-auto px-4 md:px-6 pt-32">
+    <!-- Main Content (Added relative & z-10 to stay above particles) -->
+    <main class="max-w-[1200px] mx-auto px-4 md:px-6 pt-32 relative z-10">
         
         <!-- GRID LAYOUT -->
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-5 md:gap-6">
@@ -166,13 +169,15 @@
                         </div>
                     </div>
                     
-                    <div class="mt-6 pt-6 border-t border-white/5 flex justify-between items-center group/cv cursor-pointer">
+                    <!-- UPDATE: BUTTON DOWNLOAD CV SUDAH BERFUNGSI -->
+                    <!-- Mengarah ke assets/cv.pdf, pastikan file ada di folder tersebut -->
+                    <a href="assets/cv.pdf" download="Mohammad_Rafy_Rahmawan_CV.pdf" class="mt-6 pt-6 border-t border-white/5 flex justify-between items-center group/cv cursor-pointer">
                         <span class="text-sm font-semibold text-white/70 group-hover/cv:text-white transition-colors">Download CV</span>
                         <div class="relative w-10 h-10 rounded-full bg-[#252525] border border-white/5 flex items-center justify-center overflow-hidden group-hover/cv:bg-white group-hover/cv:border-white transition-all duration-300 shadow-md">
                             <i data-lucide="move-right" width="16" class="text-white absolute transition-all duration-300 group-hover/cv:translate-x-10 group-hover/cv:opacity-0"></i>
                             <i data-lucide="download" width="16" class="text-black absolute -translate-x-10 opacity-0 transition-all duration-300 group-hover/cv:translate-x-0 group-hover/cv:opacity-100"></i>
                         </div>
-                    </div>
+                    </a>
                 </div>
             </div>
 
@@ -478,6 +483,120 @@
                 if (e.target === projectsModal) hideProjectsModal();
             });
         }
+
+        // Particles Effect
+        const canvas = document.getElementById("particles-bg");
+        const ctx = canvas.getContext("2d");
+        let particlesArray;
+
+        // Set canvas size
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Resize event
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            init();
+        });
+
+        // Mouse position
+        const mouse = {
+            x: null,
+            y: null,
+            radius: 150
+        }
+
+        window.addEventListener('mousemove', (event) => {
+            mouse.x = event.x;
+            mouse.y = event.y;
+        });
+
+        // Particle class
+        class Particle {
+            constructor(x, y, directionX, directionY, size, color) {
+                this.x = x;
+                this.y = y;
+                this.directionX = directionX;
+                this.directionY = directionY;
+                this.size = size;
+                this.color = color;
+            }
+
+            // Method to draw individual particle
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+
+            // Check particle position, check mouse position, move the particle, draw the particle
+            update() {
+                // Check if particle is still within canvas
+                if (this.x > canvas.width || this.x < 0) {
+                    this.directionX = -this.directionX;
+                }
+                if (this.y > canvas.height || this.y < 0) {
+                    this.directionY = -this.directionY;
+                }
+
+                // Check collision detection - mouse position / particle position
+                let dx = mouse.x - this.x;
+                let dy = mouse.y - this.y;
+                let distance = Math.sqrt(dx*dx + dy*dy);
+                
+                if (distance < mouse.radius + this.size) {
+                    if (mouse.x < this.x && this.x < canvas.width - this.size * 10) {
+                        this.x += 10;
+                    }
+                    if (mouse.x > this.x && this.x > this.size * 10) {
+                        this.x -= 10;
+                    }
+                    if (mouse.y < this.y && this.y < canvas.height - this.size * 10) {
+                        this.y += 10;
+                    }
+                    if (mouse.y > this.y && this.y > this.size * 10) {
+                        this.y -= 10;
+                    }
+                }
+
+                // Move particle
+                this.x += this.directionX;
+                this.y += this.directionY;
+                // Draw particle
+                this.draw();
+            }
+        }
+
+        // Create particle array
+        function init() {
+            particlesArray = [];
+            let numberOfParticles = (canvas.height * canvas.width) / 9000;
+            for (let i = 0; i < numberOfParticles; i++) {
+                let size = (Math.random() * 2) + 1;
+                let x = (Math.random() * ((innerWidth - size * 2) - (size * 2)) + size * 2);
+                let y = (Math.random() * ((innerHeight - size * 2) - (size * 2)) + size * 2);
+                let directionX = (Math.random() * 0.4) - 0.2;
+                let directionY = (Math.random() * 0.4) - 0.2;
+                let color = 'rgba(255, 255, 255, 0.1)';
+
+                particlesArray.push(new Particle(x, y, directionX, directionY, size, color));
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            ctx.clearRect(0, 0, innerWidth, innerHeight);
+
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+            }
+        }
+
+        init();
+        animate();
     </script>
 </body>
 </html>
